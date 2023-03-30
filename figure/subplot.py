@@ -2,10 +2,10 @@ from matplotlib import pyplot as plt
 from .coord import Length
 from .axis import Axis
 from itertools import cycle
-from ..style.style import COLORS, MARKERS, FILL, FIG_SIZE
+from ..style.style import COLORS, MARKERS, FILL, get_size
 
 class Subplot():
-    def __init__(self, figure=None, size=FIG_SIZE, loc="right", row=0, col=0, ax=None, add_to_fig = True):
+    def __init__(self, figure=None, size=None, loc="right", row=0, col=0, ax=None, add_to_fig = True, pad=0):
         if figure is None:
             from .figure import Figure
             figure = Figure()
@@ -16,6 +16,9 @@ class Subplot():
             self.mpl_ax = self.figure.mpl_fig.add_subplot()
         else:
             self.mpl_ax = ax
+
+        if size is None:
+            size = get_size()
 
         self._v_pad = None
         self._h_pad = None
@@ -114,9 +117,8 @@ class Subplot():
         and right of the subplot
         """
         if self._h_pad is None:
-            return (self.y.width, Length(0))
-        else:
-            return self._h_pad
+            return [self.x.height, Length(0)]
+        return self._h_pad
 
     @property
     def v_pad(self):
@@ -124,9 +126,8 @@ class Subplot():
         and top of the subplot (respectively)
         """
         if self._v_pad is None:
-            return (self.x.height, Length(0))
-        else:
-            return self._v_pad
+            return [self.x.height, Length(0)]
+        return self._v_pad
 
     @v_pad.setter
     def v_pad(self, a):
@@ -139,4 +140,5 @@ class Subplot():
     @property
     def title(self):
         return self._title
+
 

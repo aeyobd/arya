@@ -64,7 +64,12 @@ class Axis():
         trans = self._fig.dpi_scale_trans.inverted()
 
         #get the bbox in inches
-        return self.mpl_axis.get_tightbbox(rend).transformed(trans)
+        bbox = self.mpl_axis.get_tightbbox(rend)
+        if bbox:
+            tr_bbox = bbox.transformed(trans)
+            return (tr_bbox.width, tr_bbox.height)
+        else:
+            return (0,0)
 
 
     @property
@@ -72,11 +77,11 @@ class Axis():
         """The width of the bounding box for this axis instance"""
         if self.null:
             return Length(0)
-        return Length(self._get_bbox().width)
+        return Length(self._get_bbox()[0])
 
     @property
     def height(self):
         if self.null:
             return Length(0)
-        return Length(self._get_bbox().height)
+        return Length(self._get_bbox()[1])
 

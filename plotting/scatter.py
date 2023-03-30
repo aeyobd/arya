@@ -12,7 +12,7 @@ from ..style.style import get_cmap
 class Scatter(Layer):
     marker = "o"
     size = 1
-    def __init__(self, x, y, c=None, s=None, marker="o", subplot=None, size=None, **kwargs):
+    def __init__(self, x, y, c=None, s=None, marker="o", subplot=None, size=None, cmap=None, **kwargs):
         """
         A simple scatter plot
 
@@ -28,6 +28,10 @@ class Scatter(Layer):
         """
 
         super().__init__(subplot)
+        if cmap is None:
+            cmap = get_cmap()
+        self.cmap = cmap
+
         self.set(x=x, y=y, c=c, s=s, size=size, marker=marker)
         self.plot(**kwargs)
 
@@ -88,8 +92,8 @@ class Scatter(Layer):
         self._clim = clh
 
         norm = mpl.colors.Normalize(*self.clim)
-        cmap = get_cmap()
-        self.mpl_map = mpl.cm.ScalarMappable(norm, cmap)
+        
+        self.mpl_map = mpl.cm.ScalarMappable(norm, self.cmap)
 
         self.update()
 

@@ -119,7 +119,7 @@ class Figure(FigBase):
         for i in range(self.n_rows):
             height = Length(0)
 
-            pad_sep1 = pad_sep2 = Length(0)
+            pad_sep1 = pad_sep2 = Length(padding)
             for j in range(self.n_cols):
                 child = self.children[i][j]
                 pad_sep1 = max(child.v_pad[0], pad_sep1)

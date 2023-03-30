@@ -29,7 +29,7 @@ savefig.facecolor: 	'white'
 # savefig.bbox:'tight' 
 
 # 3: default is type3
-# pdf.fonttype: 		42
+pdf.fonttype: 		42
 
 
 #---------------Latex----------------

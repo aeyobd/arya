@@ -12,6 +12,29 @@ MARKERS = ['o', '+', '^', '*', 's',
            'd', 'o', 'x', '1']
 FILL =    [True,  True,  True,  True,
            False, False, False, False]
+def get_size():
+    global FIG_SIZE
+    return FIG_SIZE
+
+def set_size(s):
+    global FIG_SIZE
+    FIG_SIZE = s
+    
+    
+def set_fontsize(medium, small=None, large=None):
+    if small is None:
+        small = 0.8*medium
+        
+    if large is None:
+        large = 1.2*medium
+
+    mpl.rcParams["font.size"] =  medium
+    mpl.rcParams["figure.titlesize"] =  large
+    mpl.rcParams["axes.titlesize"] = small
+    mpl.rcParams["axes.labelsize"] = large
+    mpl.rcParams["xtick.labelsize"] = medium
+    mpl.rcParams["ytick.labelsize"] = medium
+    mpl.rcParams["legend.fontsize"] = medium
 
 
 # pallate c.o chroma.jl palette helper
@@ -64,8 +87,11 @@ cmap = ['#2b2f57', '#2c2f58', '#2e3058', '#2f3059', '#30305a', '#31315a',
 def to_rgb(h):
     return tuple(int(h[i:i+2], 16)/256 for i in (1, 3, 5))
 
-def get_cmap():
-    cmap_rgb = [to_rgb(h) for h in cmap]
+def get_cmap(reverse=False):
+    if reverse:
+        cmap_rgb = [to_rgb(h) for h in cmap[::-1]]
+    else:
+        cmap_rgb = [to_rgb(h) for h in cmap]
     ca =  mpl.colors.ListedColormap(cmap_rgb)
     ca.set_under(cmap_rgb[0])
     ca.set_over(cmap_rgb[-1])
