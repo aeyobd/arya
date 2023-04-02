@@ -68,7 +68,7 @@ class Grid:
             for col in range(self.ncols):
                 element = self.grid[row][col]
                 if not (skip_none and element is None):
-                    yield (row, col, element)
+                    yield ((row, col), element)
 
     def add_item(self, row, col, value):
         """
@@ -95,4 +95,18 @@ class Grid:
         self.grid[row][col] = value
 
 
+    def __str__(self):
+        rows = []
+        for row in self.grid:
+            row_str = []
+            for item in row:
+                if item is None:
+                    row_str.append("None")
+                else:
+                    row_str.append(str(item))
+            rows.append(" | ".join(row_str))
+        return "\n".join(rows)
+
+    def __repr__(self):
+        return self.__str__()
 

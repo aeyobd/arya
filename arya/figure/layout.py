@@ -22,7 +22,8 @@ class LayoutManager:
 
         self.mpl_fig = plt.figure()
 
-    def add_subplot(self, subplot=None, row=0, col=0):
+
+    def add_subplot(self, subplot=None, row=None, col=None):
         """
         Add a SubFigure instance to the grid at the specified position.
 
@@ -35,10 +36,16 @@ class LayoutManager:
         subfigure: SubFigure, optional
             The SubFigure instance to add to the grid.
         """
+        if row is None or col is None:
+            row, col = self.get_next_pos(row, col)
+
         if subplot is None:
-            subplot = Subplot(layout=self)
+            subplot = Subplot(layout=self, row=row, col=col)
+
 
         self.grid[row, col] = subplot
+
+        return subplot
 
     def get_next_pos(self, row=None, col=None) -> tuple[int]:
         """
@@ -72,37 +79,73 @@ class LayoutManager:
 
             return (self.grid.nrows, col)
 
-        for pos, child in self.grid:
-            if child is None:
-                return pos
+        for r in range(self.grid.nrows):
+            for c in range(self.grid.ncols):
+                if self.grid[r, c] is None:
+                    return (r, c)
 
         # no empty spaces, create a new one
-        if self.grid.nrows > self.grid.ncols:
+        if self.grid.ncols > self.grid.nrows:
             return (self.grid.nrows, 0)
-        return (self.grid.ncols)
+        return (0, self.grid.ncols)
 
+    @property
+    def width(self):
+        width = 0 
+
+        for row in range(self.grid.nrows):
+            x = 0 
+            for col in range(self.grid.ncols):
+                subplot = self.grid[row, col]
+                if subplot is not None:
+                    x += subplot.total_width
+
+            width = max(width, x)
+        
+        return width
+
+    @property
+    def height(self):
+        height = 0 
+
+        for row in range(self.grid.nrows):
+            y = 0
+            for col in range(self.grid.ncols):
+                subplot = self.grid[row, col]
+                if subplot is not None:
+                    y = max(y, subplot.total_height)
+            height += y
+
+        return height
 
     def update_positions(self):
         """
         Update the positions of the SubFigures in the grid.
         """
+        self.mpl_fig.set_size_inches(self.width, self.height)
         y = 0
-        for position, subfigure in range(self.grid.nrows):
+
+        for row in range(self.grid.nrows):
             max_height = 0
             x = 0
+            
             for col in range(self.grid.ncols):
                 subplot = self.grid[row, col]
                 if subplot is not None:
                     subplot.position(x, y)
                     max_height = max(max_height, subplot.total_height)
-                    current_x += subplot.total_width
+                    x += subplot.total_width
 
-            current_y += max_height
-
+            y += max_height
 
     def savefig(self, filename, dpi=100):
         self.create_axes()
         plt.savefig(filename, dpi=dpi)
+
+    def show(self):
+        self.update_positions()
+        self.mpl_fig.show()
+
 
 
 
