@@ -4,4 +4,6 @@ from .legend import Legend
 from .joinplot import JoinPlot
 from .coord import Length
 
-from .subfig import SubFigure
+
+from .subfigure import SubFigure
+from .layout import LayoutManager
