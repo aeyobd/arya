@@ -53,8 +53,7 @@ class Subplot:
             raise ValueError("Axes have not been created. Call create_axes() first.")
         
         # Convert inches to figure coordinates
-        bbox_in = Bbox.from_bounds(x + self.padding[0], y + self.padding[1], 
-                                   self.width, self.height)
+        bbox_in = Bbox.from_bounds(x, y, self.width, self.height)
         bbox_fig = bbox_in.transformed(self.layout.mpl_fig.dpi_scale_trans)
         bbox_fig = bbox_fig.transformed(self.layout.mpl_fig.transFigure.inverted())
         

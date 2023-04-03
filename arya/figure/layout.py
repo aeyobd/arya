@@ -7,7 +7,7 @@ class LayoutManager:
     A simple LayoutManager class for arranging SubFigures in a grid layout.
     """
 
-    def __init__(self, nrows=1, ncols=1):
+    def __init__(self, nrows=1, ncols=1, padding=0.2):
         """
         Initialize the LayoutManager with the specified dimensions.
 
@@ -19,6 +19,7 @@ class LayoutManager:
             The number of columns in the grid layout.
         """
         self.grid = Grid(nrows, ncols)
+        self.padding = [padding] * 4
 
         self.mpl_fig = plt.figure()
 
@@ -89,63 +90,97 @@ class LayoutManager:
             return (self.grid.nrows, 0)
         return (0, self.grid.ncols)
 
-    @property
-    def width(self):
-        width = 0 
 
-        for row in range(self.grid.nrows):
-            x = 0 
+    def _calc_dims(self, align='both'):
+        if align not in ('row', 'column', 'both'):
+            raise ValueError("Invalid align value. Must be 'row', 'column', or 'both'.")
+
+        row_paddings = [0] * self.grid.nrows
+        col_paddings = [0] * self.grid.ncols
+
+        if align in ('row', 'both'):
+            for row in range(self.grid.nrows):
+                max_padding = [0, 0, 0, 0]
+                for col in range(self.grid.ncols):
+                    subplot = self.grid[row, col]
+                    if subplot is not None:
+                        max_padding = [max(a, b) for a, b in zip(max_padding, subplot.padding)]
+                row_paddings[row] = max_padding
+
+        if align in ('column', 'both'):
             for col in range(self.grid.ncols):
-                subplot = self.grid[row, col]
-                if subplot is not None:
-                    x += subplot.total_width
+                max_padding = [0, 0, 0, 0]
+                for row in range(self.grid.nrows):
+                    subplot = self.grid[row, col]
+                    if subplot is not None:
+                        max_padding = [max(a, b) for a, b in zip(max_padding, subplot.padding)]
+                col_paddings[col] = max_padding
 
-            width = max(width, x)
-        
-        return width
-
-    @property
-    def height(self):
-        height = 0 
-
-        for row in range(self.grid.nrows):
-            y = 0
-            for col in range(self.grid.ncols):
-                subplot = self.grid[row, col]
-                if subplot is not None:
-                    y = max(y, subplot.total_height)
-            height += y
-
-        return height
-
-    def update_positions(self):
-        """
-        Update the positions of the SubFigures in the grid.
-        """
-        self.mpl_fig.set_size_inches(self.width, self.height)
-        y = 0
-
+        y = self.padding[1]
         for row in range(self.grid.nrows):
             max_height = 0
-            x = 0
+            x = self.padding[0]
+
+            for col in range(self.grid.ncols):
+                subplot = self.grid[row, col]
+                if subplot is not None:
+                    x_padding, y_padding = row_paddings[row][0], col_paddings[col][1]
+                    
+                    max_height = max(max_height, subplot.height)
+                    x += subplot.width + row_paddings[row][2] + row_paddings[row][0]
+
+            y += max_height + col_paddings[row][1] + col_paddings[row][3]
+
+        total_width = x + self.padding[2]
+        total_height = y + self.padding[3]
+
+        self.width = total_width
+        self.height = total_height
+
+        return row_paddings, col_paddings, total_width, total_height
+
+
+    def update_positions(self, align='both'):
+        """
+        Update the positions of the SubFigures in the grid.
+        
+        Parameters
+        ----------
+        align: str, optional
+            Alignment for padding calculation. 'row', 'column', or 'both'.
+        """
+
+        if align not in ('row', 'column', 'both'):
+            raise ValueError("Invalid align value. Must be 'row', 'column', or 'both'.")
+
+
+        # calculates the needed paddings
+        row_paddings, col_paddings, width, height = self._calc_dims(align)
+        self.mpl_fig.set_size_inches(width, height)
+
+        y = height
+        for row in range(self.grid.nrows):
+            max_height = 0
+            x = self.padding[0]
             
             for col in range(self.grid.ncols):
                 subplot = self.grid[row, col]
                 if subplot is not None:
-                    subplot.position(x, y)
-                    max_height = max(max_height, subplot.total_height)
-                    x += subplot.total_width
+                    x_padding, y_padding = row_paddings[row][0], col_paddings[col][3]
+                    subplot.position(x + x_padding, y - y_padding - subplot.height)
+                    
+                    max_height = max(max_height, subplot.height)
+                    x += subplot.width + row_paddings[row][0] + row_paddings[row][2]
 
-            y += max_height
+            y -= max_height + col_paddings[row][1] + col_paddings[row][3]
+
 
     def savefig(self, filename, dpi=100):
         self.create_axes()
         plt.savefig(filename, dpi=dpi)
 
+
     def show(self):
         self.update_positions()
         self.mpl_fig.show()
-
-
-
 
