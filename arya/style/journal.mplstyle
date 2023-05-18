@@ -17,7 +17,7 @@ text.antialiased:   False
 
 #---------------Figure----------------
 # default: 6.4, 4.8  (4/3 ratio)
-figure.figsize:		2.362, 2.362
+figure.figsize:		3.33333333, 2.5
 figure.dpi:		200
 figure.facecolor:	white
 
@@ -35,7 +35,7 @@ pdf.fonttype: 		42
 #---------------Latex----------------
 text.usetex:		True
 mathtext.fontset: 	custom
-text.latex.preamble:	\usepackage{amsmath,txfonts}
+text.latex.preamble:	\usepackage{amsmath,arev} \usepackage[T1]{fontenc}
 axes.unicode_minus:	False
 
 #---------------Plotting-------------
