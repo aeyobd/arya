@@ -104,9 +104,14 @@ def init():
 
     path = os.path.join(dir_path, style + ".mplstyle")
     mpl.style.use(path)
-    # style.use('seaborn-colorblind')
+
     mpl.ticker.AutoLocator.__init__ = AutoLocatorInit
     mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color = COLORS)
+
+    mpl.colormaps.register(get_cmap(), name="arya")
+    mpl.colormaps.register(get_cmap(reverse=True), name="arya_r")
+
+
 
 # override default tick locator to avoid 2.5 ticks
 def AutoLocatorInit(self):

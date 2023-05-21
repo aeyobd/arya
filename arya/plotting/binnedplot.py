@@ -6,6 +6,172 @@ import astropy.stats
 import numpy as np
 
 
+
+
+
+
+
+def binnedplot(data, 
+               x=None, y=None, 
+               bins=None, binwidth=None, binrange=None,
+               hue=None, 
+               cbins=None, cbinwidth=None, cbinrange=None,
+               sbins=None, sbinwidth=None, sbinrange=None,
+               stat="mean", errorbar="std",
+               marker="o", markersize=None,
+               linestyle=None,
+               log_scale=False,
+               capstyle="_",
+               capalpha=0.5,
+               capsize=None, # todo
+               errorbar_linewidth=0,
+               cmin=0,
+               ax=None,
+               color=None,
+               **kwargs
+               ):
+    """
+    Creates a binned scatter plot. For each bin in x, 
+    the chosen stat is plotted.
+
+    Params
+    ------
+    data :  :class:`pandas.DataFrame`, :class:`numpy.ndarray`, mapping, or sequence
+        The Input data for the plot.
+    x, y :  vectors or keys in ``data``
+    bins : ``int`` or list-like
+    binwidth
+    binrange
+    stat
+    errorbar: 
+        statistic for errorbars
+
+
+    kwargs
+
+    """
+
+    if isinstance(x, str):
+        x_dat = data[x]
+    else:
+        raise NotImplementedError
+
+    if isinstance(y, str):
+        y_dat = data[y]
+    else:
+        raise NotImplementedError
+
+
+    filt = ~(np.isnan(x_dat) | np.isnan(y_dat))
+    if hue is not None:
+        c_dat = data[hue]
+        filt &= ~np.isnan(c_dat)
+
+        c_dat = c_dat[filt]
+
+    x_dat = x_dat[filt]
+    y_dat = y_dat[filt]
+
+    bins, bin_centers = make_bins(x_dat, bins, binrange, binwidth)
+
+    if hue is not None:
+        # binned in colors too
+        if (cbins is not None) or (cbinrange is not None) or (cbinwidth is not None):
+            cbins, cbin_centers = make_bins(c_dat, cbins, cbinrange, cbinwidth)
+
+            cats = cbin_centers
+            cat_filts = [
+                    (c_dat >= cbins[i]) & (c_dat < cbins[i+1])
+                    for i in range(len(c_dat))
+                    ]
+        else:
+            cats = c_dat
+            cat_filts = [
+                    c_dat == c
+                    for c in cats]
+
+    
+    if len(cats) > 5:
+        pass
+
+
+    if hue is None:
+        return _binnedplot(x_dat, y_dat, ax=ax, color=color, **kwargs)
+    
+    for i in range(len(cats)):
+        label = cats[i]
+        filt = cat_filts[i]
+
+        _binnedplot(x_dat, y_dat, ax=ax, color=color, **kwargs)
+
+    # calculate stats
+
+
+def _binnedplot(x_dat, y_dat, 
+                ax, color, **kwargs):
+
+    if ax is None:
+        ax = plt.gca()
+
+    if color is None:
+        color = next(ax._get_lines.prop_cycler)["color"]
+
+
+
+    if errorbar is not None:
+        y_l, y_c, y_h = _binned_stat_range(x_dat, y_dat, bins, 
+                                           stat=stat, errorbar=errorbar)
+    else:
+        y_c = _binned_stat(x_dat, y_dat, bins, stat=stat)
+        y_l = None
+        y_h = None
+
+    if cmin > 0:
+        filt = _binned_stat(x_dat, y_dat, bins, stat="count") > cmin
+        y_c = y_c[filt]
+        y_l = y_l[filt]
+        y_h = y_h[filt]
+        bin_centers = bin_centers[filt]
+
+
+
+    if marker is not None:
+        plt.scatter(bin_centers, y_c, marker=marker, color=color, **kwargs)
+
+    if linestyle is not None:
+        plt.plot(bin_centers, y_c, linestyle=linestyle, color=color, **kwargs)
+
+
+    if y_l is not None and capstyle is not None:
+        plt.scatter(bin_centers, y_l, marker=capstyle, color=color)
+
+    if y_h is not None and capstyle is not None:
+        plt.scatter(bin_centers, y_h, marker=capstyle, color=color)
+
+    if errorbar_linewidth != 0:
+        plt.vlines(bin_centers, y_l, y_h, linewidth=errorbar_linewidth,
+                   color=color)
+
+
+
+def make_bins(x_dat, bins=None, binrange=None, binwidth=None):
+    if binrange is None:
+        binrange = (min(x_dat), max(x_dat))
+
+    if bins is None:
+        if binwidth is None:
+            _, bins = astropy.stats.histogram(x_dat, range=binrange, bins="blocks")
+        else:
+            bins = np.arange(binrange[0], binrange[1], binwidth)
+
+    elif isinstance(bins, int):
+        bins = np.linspace(binrange[0], binrange[1], bins)
+
+    bin_centers = (bins[1:] + bins[:-1])/2
+
+    return bins, bin_centers
+
+
 def _binned_stat(x, y, bins, stat="count", percentile=None):
     """
     Calculates statistics for the vecors x, y over the given bins. 
@@ -66,118 +232,4 @@ def _binned_stat_range(x, y, bins, stat="count", errorbar="std"):
             return x_l, x_c, x_h
 
     raise NotImplementedError
-
-
-
-
-
-def binnedplot(data, 
-               x=None, y=None, 
-               bins=None, binwidth=None, binrange=None,
-               stat="mean", errorbar="std",
-               marker="o", markersize=None,
-               linestyle=None,
-               log_scale=False,
-               capstyle="_",
-               capalpha=0.5,
-               capsize=None, # todo
-               errorbar_linewidth=0,
-               cmin=0,
-               ax=None,
-               color=None,
-               **kwargs
-               ):
-    """
-    Creates a binned scatter plot. For each bin in x, 
-    the chosen stat is plotted.
-
-    Params
-    ------
-    data :  :class:`pandas.DataFrame`, :class:`numpy.ndarray`, mapping, or sequence
-        The Input data for the plot.
-    x, y :  vectors or keys in ``data``
-    bins : ``int`` or list-like
-    binwidth
-    binrange
-    stat
-    errorbar: 
-        statistic for errorbars
-
-
-    kwargs
-
-    """
-
-    if ax is None:
-        ax = plt.gca()
-
-    if isinstance(x, str):
-        x_dat = data[x]
-    else:
-        raise NotImplementedError
-
-    if isinstance(y, str):
-        y_dat = data[y]
-    else:
-        raise NotImplementedError
-
-
-    filt = ~(np.isnan(x_dat) | np.isnan(y_dat))
-    x_dat = x_dat[filt]
-    y_dat = y_dat[filt]
-
-    if binrange is None:
-        binrange = (min(x_dat), max(x_dat))
-
-    if bins is None:
-        if binwidth is None:
-            _, bins = astropy.stats.histogram(x_dat, range=binrange, bins="blocks")
-        else:
-            bins = np.arange(binrange[0], binrange[1], binwidth)
-
-    elif isinstance(bins, int):
-        bins = np.linspace(binrange[0], binrange[1], bins)
-    
-
-
-    bin_centers = (bins[1:] + bins[:-1])/2
-    # calculate stats
-
-
-    if errorbar is not None:
-        y_l, y_c, y_h = _binned_stat_range(x_dat, y_dat, bins, 
-                                           stat=stat, errorbar=errorbar)
-    else:
-        y_c = _binned_stat(x_dat, y_dat, bins, stat=stat)
-        y_l = None
-        y_h = None
-
-    if cmin > 0:
-        filt = _binned_stat(x_dat, y_dat, bins, stat="count") > cmin
-        y_c = y_c[filt]
-        y_l = y_l[filt]
-        y_h = y_h[filt]
-        bin_centers = bin_centers[filt]
-
-
-    if color is None:
-        color = next(ax._get_lines.prop_cycler)["color"]
-
-    if marker is not None:
-        plt.scatter(bin_centers, y_c, marker=marker, color=color, **kwargs)
-
-    if linestyle is not None:
-        plt.plot(bin_centers, y_c, linestyle=linestyle, color=color, **kwargs)
-
-
-    if y_l is not None and capstyle is not None:
-        plt.scatter(bin_centers, y_l, marker=capstyle, color=color)
-
-    if y_h is not None and capstyle is not None:
-        plt.scatter(bin_centers, y_h, marker=capstyle, color=color)
-
-    if errorbar_linewidth != 0:
-        plt.vlines(bin_centers, y_l, y_h, linewidth=errorbar_linewidth,
-                   color=color)
-
 

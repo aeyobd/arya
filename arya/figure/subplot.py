@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.transforms import Bbox
 from ..style.style import FIG_SIZE
 
+
 class Subplot:
     """
     A Subplot class that holds a Matplotlib Axes object and provides methods to
