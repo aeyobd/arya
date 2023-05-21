@@ -1,18 +1,25 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from matplotlib.transforms import Bbox
+import matplotlib as mpl
 
 class Legend:
-    def __init__(self, loc=None, ax=None, **kwargs):
+    def __init__(self, loc=None, ax=None, labels=None, 
+                 color_only=False, **kwargs):
 
         if ax is None:
             ax = plt.gca()
         self.mpl_ax = ax
 
-        self.mpl_leg = plt.legend(loc=loc, **kwargs)
-        if loc is None:
-            self.locate(loc=loc)
 
+        self.mpl_leg = plt.legend(**kwargs)
+        self.locate(loc=loc)
+        if labels is not None:
+            self.labels = labels
+
+        if color_only:
+            self.hide_handles()
+            self.color_labels()
 
 
     @property
@@ -21,7 +28,8 @@ class Legend:
 
     @labels.setter
     def labels(self, a):
-        self._labels = a
+        for i in range(len(a)):
+            self.mpl_leg.texts[i].set_text(a[i])
 
     @property
     def handles(self):
@@ -52,7 +60,9 @@ class Legend:
 
     def color_labels(self, alpha=None):
         texts = self.mpl_leg.get_texts()
+        print(self.colors)
         for t, c in zip(texts, self.colors):
+            print(c)
             t.set_color(c)
 
 
@@ -60,13 +70,19 @@ class Legend:
     def colors(self):
         cs = []
         for handle in self.handles:
-            c = handle.get_color()
+            if isinstance(handle, plt.Line2D):
+                c = handle.get_color()
+            elif isinstance(handle, mpl.collections.PathCollection):
+                c = handle.get_edgecolor()
+            else:
+                raise NotImplementedError(handle)
+
             if isinstance(c, str):
                 cs.append(c)
-            elif isinstance(c, (list, np.ndarray)):
+            elif isinstance(c, (list, np.ndarray, tuple)):
                 if isinstance(c[0], (int, float)):
                     cs.append(c)
-                elif isinstance(c, list):
+                elif isinstance(c[0], (list, np.ndarray)):
                     cs.append(c[0])
                 else:
                     raise NotImplementedError

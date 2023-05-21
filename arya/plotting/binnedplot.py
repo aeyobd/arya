@@ -14,6 +14,7 @@ class BinnedData(PlotData):
             bins=None, binwidth=None, binrange=None,
             hue_bins=None, hue_binwidth=None, hue_binrange=None,
             stat="mean", errorbar="std",
+            cmin=2
             ):
         
         super().__init__(data, x=x, y=y, hue=hue, style=style, size=size)
@@ -28,34 +29,37 @@ class BinnedData(PlotData):
             self.bin_hues(hue_bins, hue_binrange, hue_binwidth)
                 
 
+
         self.bins, self.bin_centers = make_bins(
                 self.data["x"], 
                 bins=bins, binrange=binrange, binwidth=binwidth)
 
         df = pd.DataFrame()
         for group in self.groups():
-            df = pd.concat([df, self.make_binned(group, stat, errorbar)], 
+            df = pd.concat([df, self.make_binned(group, stat, errorbar, cmin=cmin)], 
                            ignore_index=True)
 
         self._data = df
             
 
-    def make_binned(self, df, stat, errorbar):
+    def make_binned(self, df, stat, errorbar, cmin=2):
         data = pd.DataFrame()
         data["x"] = self.bin_centers
         if errorbar is not None:
-            y_l, y_bin, y_h = _binned_stat_range(self.data.x, self.data.y, self.bins, 
+            y_l, y_bin, y_h = _binned_stat_range(df.x, df.y, self.bins, 
                                                stat=stat, errorbar=errorbar)
             data["y_l"] = y_l
             data["y_h"] = y_h
         else:
-            y_bin = _binned_stat(self.data.x, self.data.y, self.bins, stat=stat)
+            y_bin = _binned_stat(df.x, df.y, self.bins, stat=stat)
 
         data["y"] = y_bin
         for col in self.group_cols:
-            data[col] = _binned_stat(self.data.x, self.data[col], self.bins, stat="mean")
+            data[col] = _binned_stat(df.x, df[col], self.bins, stat="mode")
+        counts = _binned_stat(df.x, df.y, self.bins, stat="count")
+        filt = counts >= cmin
 
-        return data
+        return data.iloc[filt]
 
 
     def groups(self):
@@ -63,39 +67,41 @@ class BinnedData(PlotData):
         if len(self.group_cols) == 0:
             return [self.data]
         else:
-            return [g for g, _ in self.data.groupby(self.group_cols)]
+            return [g for _, g in self.data.groupby(self.group_cols)]
 
 
-    def bin_hues(bins, binnrange, binwidth):
-        hue_bins, hue_centers = make_bins(x_dat, bins, binrange, binwidth)
-        self.hue_bines = hue_bins
+    def bin_hues(self, bins, binrange, binwidth):
+        hue_bins, hue_centers = make_bins(self.data.hue, bins, binrange, binwidth)
+        self.hue_bins = hue_bins
 
         cat_filts = [
-                (c_dat >= cbins[i]) & (c_dat < cbins[i+1])
-                for i in range(len(c_dat))
+                (self.data.hue >= hue_bins[i]) & (self.data.hue < hue_bins[i+1])
+                for i in range(len(hue_centers))
                 ]
 
+        all_filt = cat_filts[0]
 
-        for cat, filt in zip(cats, cat_filts):
-            self.data[filt]["hue"] = cat
+        for cat, filt in zip(hue_bins, cat_filts):
+            self.data.loc[filt, "hue"] = cat
+            all_filt |= filt
+
+        self.data.loc[~all_filt, "hue"] = np.nan
 
 
 
 
 
 def binnedplot(data, 
+               # data and processing
                x=None, y=None, 
                hue=None, style=None, size=None,
                bins=None, binwidth=None, binrange=None,
                hue_bins=None, hue_binwidth=None, hue_binrange=None,
                stat="mean", errorbar="std",
-               marker="o", markersize=None,
-               linestyle=None,
-               log_scale=False,
-               capstyle="_", capalpha=0.5, capsize=None,
-               cmin=0,
-               ax=None,
-               color=None,
+               # aesthetics
+               aes="scatter",
+               cmin=2,
+               cap_kwargs={},
                **kwargs
                ):
     """
@@ -124,6 +130,7 @@ def binnedplot(data,
                 hue_bins=hue_bins, hue_binwidth=hue_binwidth, 
                 hue_binrange=hue_binrange,
                 stat=stat, errorbar=errorbar,
+                cmin=cmin
                 )
 
     if hue is not None:
@@ -133,19 +140,33 @@ def binnedplot(data,
     if style is not None:
         style = "style"
 
-    ax = sns.scatterplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
+    if aes == "scatter":
+        sns.scatterplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
+    else:
+        sns.lineplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
 
     if "y_l" in dat.data.keys():
-        colors = ax.collections[-1].get_facecolors()
-        if len(colors) == len(dat.data):
-            plt.scatter(dat.data.x, dat.data.y_l, marker=capstyle, c=colors)
-            plt.scatter(dat.data.x, dat.data.y_h, marker=capstyle, c=colors)
+        plt.gca().set_prop_cycle(None) # reset properties cycle
+
+        if len(dat.data.hue.unique()) > 5:
+            cb = ColorBar((min(dat.data.hue), max(dat.data.hue)))
+            for group in dat.groups():
+                color = cb(group.hue[0]) # TODO
+                plot_err(dat.data.x, dat.data.y_l, dat.data.y_h, color=color, **cap_kwargs)
         else:
-            color = colors[0]
-            plt.scatter(dat.data.x, dat.data.y_l, marker=capstyle, color=color)
-            plt.scatter(dat.data.x, dat.data.y_h, marker=capstyle, color=color)
+            for group in dat.groups():
+                color = next(plt.gca()._get_lines.prop_cycler)["color"]
+                plot_err(group.x, group.y_l, group.y_h, color=color, aes=aes, **cap_kwargs)
+    return dat
 
 
+def plot_err(x, y_l, y_h, color=None, aes="scatter", **kwargs):
+    if aes == "scatter":
+        marker="_"
+        plt.scatter(x, y_l, marker=marker, color=color, **kwargs)
+        plt.scatter(x, y_h, marker=marker, color=color, **kwargs)
+    elif aes == "fill":
+        plt.fill_between(x, y_l, y_h, color=color, **kwargs)
 
 
 def make_bins(x_dat, bins=None, binrange=None, binwidth=None):
@@ -184,6 +205,10 @@ def _binned_stat(x, y, bins, stat="count", percentile=None):
         return binned_statistic(x, y, bins=bins, statistic="std")[0]
     elif stat == "count":
         return binned_statistic(x, y, bins=bins, statistic="count")[0]
+    elif stat == "mode":
+        return binned_statistic(x, y, bins=bins, 
+                                statistic=lambda a: max(set(a), key=list(a).count))[0]
+
 
 
     raise NotImplementedError
