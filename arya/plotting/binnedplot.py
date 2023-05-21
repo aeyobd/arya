@@ -1,11 +1,83 @@
-import seaborn as sns
 import matplotlib.pyplot as plt
-from seaborn._docstrings import DocstringComponents, _core_docs
+import seaborn as sns
+import numpy as np
+import pandas as pd
+
 from scipy.stats import binned_statistic
 import astropy.stats
-import numpy as np
+
+from ._plot_data import PlotData
 
 
+class BinnedData(PlotData):
+    def __init__(self, data, x=None, y=None, hue=None, style=None, size=None,
+            bins=None, binwidth=None, binrange=None,
+            hue_bins=None, hue_binwidth=None, hue_binrange=None,
+            stat="mean", errorbar="std",
+            ):
+        
+        super().__init__(data, x=x, y=y, hue=hue, style=style, size=size)
+        self.group_cols = list(set(["hue", "style", "size"]) & set(self.vars.keys()))
+
+        # if hue is binned
+        if ((hue is not None)
+                and (hue_bins is not None 
+                or (hue_binrange is not None) 
+                or (hue_binwidth is not None))
+            ):
+            self.bin_hues(hue_bins, hue_binrange, hue_binwidth)
+                
+
+        self.bins, self.bin_centers = make_bins(
+                self.data["x"], 
+                bins=bins, binrange=binrange, binwidth=binwidth)
+
+        df = pd.DataFrame()
+        for group in self.groups():
+            df = pd.concat([df, self.make_binned(group, stat, errorbar)], 
+                           ignore_index=True)
+
+        self._data = df
+            
+
+    def make_binned(self, df, stat, errorbar):
+        data = pd.DataFrame()
+        data["x"] = self.bin_centers
+        if errorbar is not None:
+            y_l, y_bin, y_h = _binned_stat_range(self.data.x, self.data.y, self.bins, 
+                                               stat=stat, errorbar=errorbar)
+            data["y_l"] = y_l
+            data["y_h"] = y_h
+        else:
+            y_bin = _binned_stat(self.data.x, self.data.y, self.bins, stat=stat)
+
+        data["y"] = y_bin
+        for col in self.group_cols:
+            data[col] = _binned_stat(self.data.x, self.data[col], self.bins, stat="mean")
+
+        return data
+
+
+    def groups(self):
+
+        if len(self.group_cols) == 0:
+            return [self.data]
+        else:
+            return [g for g, _ in self.data.groupby(self.group_cols)]
+
+
+    def bin_hues(bins, binnrange, binwidth):
+        hue_bins, hue_centers = make_bins(x_dat, bins, binrange, binwidth)
+        self.hue_bines = hue_bins
+
+        cat_filts = [
+                (c_dat >= cbins[i]) & (c_dat < cbins[i+1])
+                for i in range(len(c_dat))
+                ]
+
+
+        for cat, filt in zip(cats, cat_filts):
+            self.data[filt]["hue"] = cat
 
 
 
@@ -13,18 +85,14 @@ import numpy as np
 
 def binnedplot(data, 
                x=None, y=None, 
+               hue=None, style=None, size=None,
                bins=None, binwidth=None, binrange=None,
-               hue=None, 
-               cbins=None, cbinwidth=None, cbinrange=None,
-               sbins=None, sbinwidth=None, sbinrange=None,
+               hue_bins=None, hue_binwidth=None, hue_binrange=None,
                stat="mean", errorbar="std",
                marker="o", markersize=None,
                linestyle=None,
                log_scale=False,
-               capstyle="_",
-               capalpha=0.5,
-               capsize=None, # todo
-               errorbar_linewidth=0,
+               capstyle="_", capalpha=0.5, capsize=None,
                cmin=0,
                ax=None,
                color=None,
@@ -33,6 +101,7 @@ def binnedplot(data,
     """
     Creates a binned scatter plot. For each bin in x, 
     the chosen stat is plotted.
+    then uses seaborn to create actual plot
 
     Params
     ------
@@ -50,107 +119,32 @@ def binnedplot(data,
     kwargs
 
     """
-
-    if isinstance(x, str):
-        x_dat = data[x]
-    else:
-        raise NotImplementedError
-
-    if isinstance(y, str):
-        y_dat = data[y]
-    else:
-        raise NotImplementedError
-
-
-    filt = ~(np.isnan(x_dat) | np.isnan(y_dat))
-    if hue is not None:
-        c_dat = data[hue]
-        filt &= ~np.isnan(c_dat)
-
-        c_dat = c_dat[filt]
-
-    x_dat = x_dat[filt]
-    y_dat = y_dat[filt]
-
-    bins, bin_centers = make_bins(x_dat, bins, binrange, binwidth)
+    dat = BinnedData(data, x=x, y=y, hue=hue, style=style, size=size,
+                bins=bins, binwidth=binwidth, binrange=binrange,
+                hue_bins=hue_bins, hue_binwidth=hue_binwidth, 
+                hue_binrange=hue_binrange,
+                stat=stat, errorbar=errorbar,
+                )
 
     if hue is not None:
-        # binned in colors too
-        if (cbins is not None) or (cbinrange is not None) or (cbinwidth is not None):
-            cbins, cbin_centers = make_bins(c_dat, cbins, cbinrange, cbinwidth)
+        hue = "hue"
+    if size is not None:
+        size = "size"
+    if style is not None:
+        style = "style"
 
-            cats = cbin_centers
-            cat_filts = [
-                    (c_dat >= cbins[i]) & (c_dat < cbins[i+1])
-                    for i in range(len(c_dat))
-                    ]
+    ax = sns.scatterplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
+
+    if "y_l" in dat.data.keys():
+        colors = ax.collections[-1].get_facecolors()
+        if len(colors) == len(dat.data):
+            plt.scatter(dat.data.x, dat.data.y_l, marker=capstyle, c=colors)
+            plt.scatter(dat.data.x, dat.data.y_h, marker=capstyle, c=colors)
         else:
-            cats = c_dat
-            cat_filts = [
-                    c_dat == c
-                    for c in cats]
+            color = colors[0]
+            plt.scatter(dat.data.x, dat.data.y_l, marker=capstyle, color=color)
+            plt.scatter(dat.data.x, dat.data.y_h, marker=capstyle, color=color)
 
-    
-    if len(cats) > 5:
-        pass
-
-
-    if hue is None:
-        return _binnedplot(x_dat, y_dat, ax=ax, color=color, **kwargs)
-    
-    for i in range(len(cats)):
-        label = cats[i]
-        filt = cat_filts[i]
-
-        _binnedplot(x_dat, y_dat, ax=ax, color=color, **kwargs)
-
-    # calculate stats
-
-
-def _binnedplot(x_dat, y_dat, 
-                ax, color, **kwargs):
-
-    if ax is None:
-        ax = plt.gca()
-
-    if color is None:
-        color = next(ax._get_lines.prop_cycler)["color"]
-
-
-
-    if errorbar is not None:
-        y_l, y_c, y_h = _binned_stat_range(x_dat, y_dat, bins, 
-                                           stat=stat, errorbar=errorbar)
-    else:
-        y_c = _binned_stat(x_dat, y_dat, bins, stat=stat)
-        y_l = None
-        y_h = None
-
-    if cmin > 0:
-        filt = _binned_stat(x_dat, y_dat, bins, stat="count") > cmin
-        y_c = y_c[filt]
-        y_l = y_l[filt]
-        y_h = y_h[filt]
-        bin_centers = bin_centers[filt]
-
-
-
-    if marker is not None:
-        plt.scatter(bin_centers, y_c, marker=marker, color=color, **kwargs)
-
-    if linestyle is not None:
-        plt.plot(bin_centers, y_c, linestyle=linestyle, color=color, **kwargs)
-
-
-    if y_l is not None and capstyle is not None:
-        plt.scatter(bin_centers, y_l, marker=capstyle, color=color)
-
-    if y_h is not None and capstyle is not None:
-        plt.scatter(bin_centers, y_h, marker=capstyle, color=color)
-
-    if errorbar_linewidth != 0:
-        plt.vlines(bin_centers, y_l, y_h, linewidth=errorbar_linewidth,
-                   color=color)
 
 
 
