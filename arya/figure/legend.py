@@ -12,7 +12,13 @@ class Legend:
         self.mpl_ax = ax
 
 
+        if color_only:
+            kwargs["handlelength"] = 0
+
+        
+        self.kwargs = kwargs
         self.mpl_leg = plt.legend(**kwargs)
+
         self.locate(loc=loc)
         if labels is not None:
             self.labels = labels
@@ -55,7 +61,7 @@ class Legend:
             h.set_visible(False)
 
         self.mpl_leg.handlelength = 0
-        self.mpl_leg.columnspacing = 0.8
+        # self.mpl_leg.columnspacing = 0.8
 
 
     def color_labels(self, alpha=None):
@@ -93,9 +99,8 @@ class Legend:
             self.handles[i].set_color(cs[i])
 
 
-    def create_legend(self, **kwargs):
-        self.mpl_leg = self.mpl_ax.legend(
-                self.handles, self.labels, frameon=False, **kwargs)
+    def create_legend(self):
+        self.mpl_leg = self.mpl_ax.legend(self.handles, self.labels, **self.kwargs)
 
 
     def locate(self, loc=None):
@@ -114,12 +119,15 @@ class Legend:
 
         # have to remove and recreate
         self.mpl_leg.remove()
+
         if loc == -1:
-            self.create_legend(loc="upper left", bbox_to_anchor=(1, 1))
+            self.kwargs["loc"] = "upper left"
+            self.kwargs["bbox_to_anchor"] = (1, 1)
         elif loc == -2:
-            self.create_legend(loc="upper left", bbox_to_anchor=(0, 0))
-        else:
-            self.create_legend(loc=loc)
+            self.kwargs["loc"] = "upper left"
+            self.kwargs["bbox_to_anchor"] = (0, 0)
+
+        self.create_legend()
 
 
 

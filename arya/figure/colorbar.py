@@ -5,8 +5,9 @@ import numpy as np
 
 
 class HueMap:
-    def __init__(self, clim, norm="linear"):
-        cmap = plt.get_cmap()
+    def __init__(self, clim, norm="linear", cmap=None):
+        if cmap is None:
+            cmap = plt.get_cmap()
 
 
         if isinstance(norm, (tuple, list, np.ndarray)):
@@ -28,9 +29,9 @@ class HueMap:
 
 class Colorbar:
     def __init__(self, huemap = None, clim=None, cvals=None, norm="linear", 
-                 create=True, **kwargs):
+                 create=True, cmap=None,  **kwargs):
         if huemap is None:
-            self.map = HueMap(clim, norm)
+            self.map = HueMap(clim, norm, cmap=cmap)
         else:
             self.map = huemap
 
