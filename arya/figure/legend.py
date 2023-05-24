@@ -60,9 +60,7 @@ class Legend:
 
     def color_labels(self, alpha=None):
         texts = self.mpl_leg.get_texts()
-        print(self.colors)
         for t, c in zip(texts, self.colors):
-            print(c)
             t.set_color(c)
 
 

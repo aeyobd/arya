@@ -7,6 +7,7 @@ from scipy.stats import binned_statistic
 import astropy.stats
 
 from ._plot_data import PlotData
+from ..figure.colorbar import Colorbar
 
 
 class BinnedData(PlotData):
@@ -39,6 +40,7 @@ class BinnedData(PlotData):
             df = pd.concat([df, self.make_binned(group, stat, errorbar, cmin=cmin)], 
                            ignore_index=True)
 
+        self._old_data = self.data
         self._data = df
             
 
@@ -59,15 +61,19 @@ class BinnedData(PlotData):
         counts = _binned_stat(df.x, df.y, self.bins, stat="count")
         filt = counts >= cmin
 
-        return data.iloc[filt]
+        return data[filt]
 
 
     def groups(self):
 
         if len(self.group_cols) == 0:
             return [self.data]
-        else:
-            return [g for _, g in self.data.groupby(self.group_cols)]
+
+        gs = []
+        for _, g in self.data.groupby(self.group_cols):
+            if len(g) > 0:
+                gs.append(g)
+        return gs
 
 
     def bin_hues(self, bins, binrange, binwidth):
@@ -99,9 +105,13 @@ def binnedplot(data,
                hue_bins=None, hue_binwidth=None, hue_binrange=None,
                stat="mean", errorbar="std",
                # aesthetics
+               hue_label=None,
                aes="scatter",
                cmin=2,
                cap_kwargs={},
+               legend=True,
+               edgecolor=None,
+               facecolor="match",
                **kwargs
                ):
     """
@@ -125,6 +135,9 @@ def binnedplot(data,
     kwargs
 
     """
+    if hue_label is None:
+        hue_label=hue
+
     dat = BinnedData(data, x=x, y=y, hue=hue, style=style, size=size,
                 bins=bins, binwidth=binwidth, binrange=binrange,
                 hue_bins=hue_bins, hue_binwidth=hue_binwidth, 
@@ -140,18 +153,43 @@ def binnedplot(data,
     if style is not None:
         style = "style"
 
+    binned_hue = (hue_bins is not None) or (hue_binwidth is not None) or (hue_binrange is not None)
+    if len(dat.data.hue.unique()) > 2:
+        if binned_hue:
+            if hue_binrange is None:
+                hue_binrange = (min(dat.data.hue), max(dat.data.hue))
+            cb = Colorbar(hue_binrange, norm=dat.hue_bins,
+                          label=hue_label, create=legend)
+        else: 
+            cb = Colorbar((min(dat.data.hue), max(dat.data.hue)), label=hue_label,
+                          create=legend)
+        seq_hue = True
+    else:
+        seq_hue = False
+
     if aes == "scatter":
-        sns.scatterplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
+        s = plt.scatter(dat["x"], dat["y"], **kwargs)
+        if facecolor == "match":
+            s.set_facecolors(cb(dat["hue"]))
+        else:
+            s.set_facecolors(facecolor)
+        if edgecolor == "match":
+            s.set_edgecolors(cb(dat["hue"]))
+        else:
+            s.set_edgecolors(edgecolor)
     else:
         sns.lineplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
+
+
+    if seq_hue or not legend:
+        plt.gca().legend().remove()
 
     if "y_l" in dat.data.keys():
         plt.gca().set_prop_cycle(None) # reset properties cycle
 
-        if len(dat.data.hue.unique()) > 5:
-            cb = ColorBar((min(dat.data.hue), max(dat.data.hue)))
+        if seq_hue:
             for group in dat.groups():
-                color = cb(group.hue[0]) # TODO
+                color = cb(np.mean(group.hue)) # TODO
                 plot_err(dat.data.x, dat.data.y_l, dat.data.y_h, color=color, **cap_kwargs)
         else:
             for group in dat.groups():

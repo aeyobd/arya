@@ -19,7 +19,8 @@ class PlotData:
             self._data[name] = data[var]
             self._vars[name] = var
 
-        self._data.dropna()
+
+        self._data.dropna(inplace=True)
 
 
 

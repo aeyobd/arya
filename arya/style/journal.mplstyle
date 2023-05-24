@@ -17,16 +17,16 @@ text.antialiased:   False
 
 #---------------Figure----------------
 # default: 6.4, 4.8  (4/3 ratio)
-figure.figsize:		3.33333333, 2.5
+figure.figsize:		3.33333333, 2.2570226
 figure.dpi:		200
 figure.facecolor:	white
 
 # default flalse
 # figure.constrained_layout.use: True
 
-savefig.facecolor: 	'white'
+savefig.facecolor: 	white
 
-# savefig.bbox:'tight' 
+savefig.bbox:       tight 
 
 # 3: default is type3
 pdf.fonttype: 		42

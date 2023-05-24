@@ -108,8 +108,9 @@ def init():
     mpl.ticker.AutoLocator.__init__ = AutoLocatorInit
     mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color = COLORS)
 
-    mpl.colormaps.register(get_cmap(), name="arya")
-    mpl.colormaps.register(get_cmap(reverse=True), name="arya_r")
+    if "arya" not in mpl.colormaps.keys():
+        mpl.colormaps.register(get_cmap(), name="arya")
+        mpl.colormaps.register(get_cmap(reverse=True), name="arya_r")
 
 
 
