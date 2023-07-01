@@ -111,7 +111,7 @@ def binnedplot(data,
                cap_kwargs={},
                legend=True,
                edgecolor=None,
-               facecolor="match",
+               facecolor=None, 
                **kwargs
                ):
     """
@@ -154,7 +154,7 @@ def binnedplot(data,
         style = "style"
 
     binned_hue = (hue_bins is not None) or (hue_binwidth is not None) or (hue_binrange is not None)
-    if len(dat.data.hue.unique()) > 2:
+    if (hue is not None) and (len(dat.data.hue.unique()) > 2):
         if binned_hue:
             if hue_binrange is None:
                 hue_binrange = (min(dat.data.hue), max(dat.data.hue))
@@ -167,13 +167,14 @@ def binnedplot(data,
     else:
         seq_hue = False
 
+
     if aes == "scatter":
         s = plt.scatter(dat["x"], dat["y"], **kwargs)
-        if facecolor == "match":
+        if facecolor == "match" and hue is not None:
             s.set_facecolors(cb(dat["hue"]))
         else:
             s.set_facecolors(facecolor)
-        if edgecolor == "match":
+        if edgecolor == "match" and hue is not None:
             s.set_edgecolors(cb(dat["hue"]))
         else:
             s.set_edgecolors(edgecolor)

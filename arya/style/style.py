@@ -2,6 +2,7 @@ import matplotlib as mpl
 import os
 import seaborn as sns
 import itertools
+import matplotlib.pyplot as plt
 
 from .cmap import get_cmap
 
@@ -62,9 +63,10 @@ def set_fontsize(medium, small=None, large=None):
         large = 1.2*medium
 
     mpl.rcParams["font.size"] =  medium
-    mpl.rcParams["figure.titlesize"] =  large
+    mpl.rcParams["figure.titlesize"] =  medium
+    mpl.rcParams["figure.labelsize"] =  medium
     mpl.rcParams["axes.titlesize"] = small
-    mpl.rcParams["axes.labelsize"] = large
+    mpl.rcParams["axes.labelsize"] = medium
     mpl.rcParams["xtick.labelsize"] = small
     mpl.rcParams["ytick.labelsize"] = small
     mpl.rcParams["legend.fontsize"] = medium
@@ -102,6 +104,8 @@ def set_seaborn():
         'image.cmap': 'arya',
     })
 
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = "Times"
 
 
 

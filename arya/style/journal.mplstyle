@@ -1,11 +1,3 @@
-
-#---------------Fonts----------------
-font.family:		serif
-# font.serif: 		'Times'
-# text.antialiased:   True
-
-
-
 #---------------Figure----------------
 # default: 6.4, 4.8  (4/3 ratio)
 figure.figsize:		3.33333333, 2.2570226
@@ -26,11 +18,19 @@ pdf.fonttype: 		42
 #---------------Latex----------------
 text.usetex:		    True
 mathtext.fontset: 	    custom
-text.latex.preamble:    \usepackage{amsmath} \usepackage{newtxtext,newtxmath} \usepackage[T1]{fontenc}
+text.latex.preamble:    \usepackage{amsmath} \usepackage{txfonts} \usepackage[T1]{fontenc}
 # text.latex.unicode:     True
 
 # avoid latex encoding issues
 # axes.unicode_minus:	    False
+#
+axes.formatter.use_mathtext:    True
+
+
+#---------------Fonts----------------
+font.family:		serif
+# font.serif: 		Times
+text.antialiased:   True
 
 #---------------Plotting-------------
 
