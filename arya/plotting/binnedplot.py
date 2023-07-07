@@ -20,6 +20,7 @@ class BinnedData(PlotData):
         
         super().__init__(data, x=x, y=y, hue=hue, style=style, size=size)
         self.group_cols = list(set(["hue", "style", "size"]) & set(self.vars.keys()))
+        self.has_errors = False
 
         # if hue is binned
         if ((hue is not None)
@@ -52,6 +53,7 @@ class BinnedData(PlotData):
                                                stat=stat, errorbar=errorbar)
             data["y_l"] = y_l
             data["y_h"] = y_h
+            self.has_errors = True
         else:
             y_bin = _binned_stat(df.x, df.y, self.bins, stat=stat)
 
@@ -59,6 +61,7 @@ class BinnedData(PlotData):
         for col in self.group_cols:
             data[col] = _binned_stat(df.x, df[col], self.bins, stat="mode")
         counts = _binned_stat(df.x, df.y, self.bins, stat="count")
+        data["counts"] = counts
         filt = counts >= cmin
 
         return data[filt]
@@ -108,10 +111,9 @@ def binnedplot(data,
                hue_label=None,
                aes="scatter",
                cmin=2,
-               cap_kwargs={},
                legend=True,
-               edgecolor=None,
-               facecolor=None, 
+               color=None,
+               err_kwargs={},
                **kwargs
                ):
     """
@@ -153,6 +155,49 @@ def binnedplot(data,
     if style is not None:
         style = "style"
 
+    has_cb, cb = create_cb(dat, hue, hue_bins, hue_binrange, hue_binwidth, 
+            hue_label, legend)
+
+
+    if has_cb:
+        for group in dat.groups():
+            color = cb(np.mean(group.hue)) # TODO
+            plot_err(dat, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
+    else:
+        for group in dat.groups():
+            if color is None:
+                color = next(plt.gca()._get_lines.prop_cycler)["color"]
+            plot_err(dat, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
+
+
+    if has_cb or not legend:
+        plt.gca().legend().remove()
+
+
+    return dat
+
+
+
+def plot_err(dat, color=None, aes="scatter", err_kwargs={}, **kwargs):
+    if aes == "scatter":
+        s = plt.scatter(dat.data["x"], dat.data["y"], color=color, **kwargs)
+
+        if dat.has_errors:
+            marker="_"
+            plt.scatter(dat.data["x"], dat.data["y_l"], marker=marker,
+                    color=color, **err_kwargs)
+            plt.scatter(dat.data["x"], dat.data["y_h"], marker=marker,
+                    color=color, **err_kwargs)
+
+    else:
+        sns.lineplot(dat.data, x="x", y="y", color=color, **kwargs)
+
+        if dat.has_errors:
+            plt.fill_between(dat.data.x, dat.data.x_l, dat.data.x_h,
+                    color=color, **err_kwargs)
+
+
+def create_cb(dat, hue, hue_bins, hue_binrange, hue_binwidth, hue_label, legend):
     binned_hue = (hue_bins is not None) or (hue_binwidth is not None) or (hue_binrange is not None)
     if (hue is not None) and (len(dat.data.hue.unique()) > 2):
         if binned_hue:
@@ -166,46 +211,11 @@ def binnedplot(data,
         seq_hue = True
     else:
         seq_hue = False
+        cb = None
+
+    return seq_hue, cb
 
 
-    if aes == "scatter":
-        s = plt.scatter(dat["x"], dat["y"], **kwargs)
-        if facecolor == "match" and hue is not None:
-            s.set_facecolors(cb(dat["hue"]))
-        else:
-            s.set_facecolors(facecolor)
-        if edgecolor == "match" and hue is not None:
-            s.set_edgecolors(cb(dat["hue"]))
-        else:
-            s.set_edgecolors(edgecolor)
-    else:
-        sns.lineplot(dat.data, x="x", y="y", hue=hue, size=size, style=style, **kwargs)
-
-
-    if seq_hue or not legend:
-        plt.gca().legend().remove()
-
-    if "y_l" in dat.data.keys():
-        plt.gca().set_prop_cycle(None) # reset properties cycle
-
-        if seq_hue:
-            for group in dat.groups():
-                color = cb(np.mean(group.hue)) # TODO
-                plot_err(dat.data.x, dat.data.y_l, dat.data.y_h, color=color, **cap_kwargs)
-        else:
-            for group in dat.groups():
-                color = next(plt.gca()._get_lines.prop_cycler)["color"]
-                plot_err(group.x, group.y_l, group.y_h, color=color, aes=aes, **cap_kwargs)
-    return dat
-
-
-def plot_err(x, y_l, y_h, color=None, aes="scatter", **kwargs):
-    if aes == "scatter":
-        marker="_"
-        plt.scatter(x, y_l, marker=marker, color=color, **kwargs)
-        plt.scatter(x, y_h, marker=marker, color=color, **kwargs)
-    elif aes == "fill":
-        plt.fill_between(x, y_l, y_h, color=color, **kwargs)
 
 
 def make_bins(x_dat, bins=None, binrange=None, binwidth=None):
