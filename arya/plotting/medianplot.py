@@ -60,18 +60,17 @@ def medianplot(data,
     if style is not None:
         style = "style"
 
-    has_cb, cb = create_cb(dat, hue, hue_bins, hue_binrange, hue_binwidth, 
-            hue_label, legend)
+    has_cb, cb = create_cb(dat, hue, hue_label, legend)
 
     if has_cb:
         for group in dat.groups():
             color = cb(np.mean(group.hue)) # TODO
-            plot_err(dat, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
+            plot_err(group, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
     else:
         for group in dat.groups():
             if color is None:
                 color = next(plt.gca()._get_lines.prop_cycler)["color"]
-            plot_err(dat, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
+            plot_err(group, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
 
 
     if has_cb or not legend:
@@ -81,8 +80,9 @@ def medianplot(data,
     return dat
 
 
-def create_cb(dat, hue, hue_bins, hue_binrange, hue_binwidth, hue_label, legend):
-    binned_hue = (hue_bins is not None) or (hue_binwidth is not None) or (hue_binrange is not None)
+def create_cb(dat, hue, hue_label, legend):
+    # binned_hue = (hue_bins is not None) or (hue_binwidth is not None) or (hue_binrange is not None)
+    binned_hue = False
     if (hue is not None) and (len(dat.data.hue.unique()) > 2):
         if binned_hue:
             if hue_binrange is None:
@@ -110,6 +110,7 @@ class MedianData(PlotData):
         self.group_cols = list(set(["hue", "style", "size"]) & set(self.vars.keys()))
 
         df = pd.DataFrame()
+        
         for group in self.groups():
             df = pd.concat(
                      [df, self.bin(group,  **kwargs)], 
@@ -128,7 +129,10 @@ class MedianData(PlotData):
         N = len(df_sorted) 
         offset = (N % binsize)//2
 
-        data = pd.DataFrame()
+        if self.has_errors:
+            data = pd.DataFrame(columns=["x", "y", "y_l", "y_h"])
+        else:
+            data = pd.DataFrame(columns=["x", "y"])
 
         i = 0
         while i + 2*binsize < N:
@@ -144,13 +148,21 @@ class MedianData(PlotData):
             x = _stat(group["x"], stat)
             y = _stat(group["y"], stat)
 
+            print(x)
+            print(y)
             if self.has_errors:
-                y_l, y_h = _binned_stat_range(df.y, stat=stat, errorbar=errorbar)
-                pd.concat([data, pd.Series(dict(x=x, y=y, y_l=y_l, y_h=y_h))])
+                y_l, y_h = _stat_range(df.y, stat=stat, errorbar=errorbar)
+                data = pd.concat([data, pd.DataFrame(
+                    dict(x=[x], y=[y], y_l=[y_l], y_h=[y_h]))],
+                                 ignore_index=True)
             else:
-                pd.concat([data, pd.Series(dict(x=x, y=y))])
+                data = pd.concat([data, pd.DataFrame(dict(x=[x], y=[y]))],
+                                 ignore_index=True)
 
-        return data[filt]
+            i += binsize
+
+        print(data)
+        return data
 
 
     def groups(self):
@@ -161,6 +173,8 @@ class MedianData(PlotData):
         for _, g in self.data.groupby(self.group_cols):
             if len(g) > 0:
                 gs.append(g)
+
+        print(gs)
         return gs
 
 

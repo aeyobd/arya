@@ -159,15 +159,16 @@ def binnedplot(data,
             hue_label, legend)
 
 
+    kwargs["has_errors"] = dat.has_errors
     if has_cb:
         for group in dat.groups():
             color = cb(np.mean(group.hue)) # TODO
-            plot_err(dat, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
+            plot_err(group, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
     else:
         for group in dat.groups():
             if color is None:
                 color = next(plt.gca()._get_lines.prop_cycler)["color"]
-            plot_err(dat, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
+            plot_err(group, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
 
 
     if has_cb or not legend:
@@ -178,22 +179,23 @@ def binnedplot(data,
 
 
 
-def plot_err(dat, color=None, aes="scatter", err_kwargs={}, **kwargs):
+def plot_err(data, has_errors=False,
+             color=None, aes="scatter", err_kwargs={}, **kwargs):
     if aes == "scatter":
-        s = plt.scatter(dat.data["x"], dat.data["y"], color=color, **kwargs)
+        s = plt.scatter(data["x"], data["y"], color=color, **kwargs)
 
-        if dat.has_errors:
+        if has_errors:
             marker="_"
-            plt.scatter(dat.data["x"], dat.data["y_l"], marker=marker,
+            plt.scatter(data["x"], data["y_l"], marker=marker,
                     color=color, **err_kwargs)
-            plt.scatter(dat.data["x"], dat.data["y_h"], marker=marker,
+            plt.scatter(data["x"], data["y_h"], marker=marker,
                     color=color, **err_kwargs)
 
     else:
-        sns.lineplot(dat.data, x="x", y="y", color=color, **kwargs)
+        sns.lineplot(data, x="x", y="y", color=color, **kwargs)
 
-        if dat.has_errors:
-            plt.fill_between(dat.data.x, dat.data.x_l, dat.data.x_h,
+        if has_errors:
+            plt.fill_between(data.x, data.x_l, data.x_h,
                     color=color, **err_kwargs)
 
 
