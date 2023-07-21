@@ -5,15 +5,21 @@ import matplotlib as mpl
 def to_rgb(h):
     return tuple(int(h[i:i+2], 16)/256 for i in (1, 3, 5))
 
-def get_cmap(reverse=False):
-    if reverse:
-        cmap_rgb = [to_rgb(h) for h in cmap[::-1]]
+def get_cmap(reverse=False, to_white=False):
+    if to_white:
+        cm = cmap_w
     else:
-        cmap_rgb = [to_rgb(h) for h in cmap]
-    ca =  mpl.colors.ListedColormap(cmap_rgb)
-    ca.set_under(cmap_rgb[0])
-    ca.set_over(cmap_rgb[-1])
-    return ca
+        cm = cmap
+
+    if reverse:
+        cmap_rgb = [to_rgb(h) for h in cm[::-1]]
+    else:
+        cmap_rgb = [to_rgb(h) for h in cm]
+
+    lcm = mpl.colors.ListedColormap(cmap_rgb)
+    lcm.set_under(cmap_rgb[0])
+    lcm.set_over(cmap_rgb[-1])
+    return lcm
 
 
 # pallate c.o chroma.jl palette helper
@@ -63,3 +69,47 @@ cmap = ['#2b2f57', '#2c2f58', '#2e3058', '#2f3059', '#30305a', '#31315a',
         '#f6c758', '#f6c859', '#f6c959', '#f5cb59', '#f5cc59', '#f5cd59',
         '#f5ce59', '#f5cf5a', '#f4d05a', '#f4d15a']
 
+
+cmap_w = ['#142d72', '#172d72', '#1a2e73', '#1d2e73', '#202f74', '#232f74',
+          '#253074', '#273075', '#2a3175', '#2c3176', '#2e3176', '#303276',
+          '#323277', '#343377', '#363378', '#383478', '#393478', '#3b3579',
+          '#3d3579', '#3f367a', '#40367a', '#42377a', '#44377b', '#45387b',
+          '#47387b', '#49397c', '#4a397c', '#4c3a7c', '#4d3a7d', '#4f3b7d',
+          '#503b7d', '#523c7e', '#533c7e', '#553d7e', '#563d7e', '#583e7f',
+          '#593e7f', '#5b3f7f', '#5c3f80', '#5e4080', '#5f4080', '#614180',
+          '#624181', '#634281', '#654381', '#664381', '#684482', '#694482',
+          '#6a4582', '#6c4582', '#6d4682', '#6e4783', '#704783', '#714883',
+          '#724883', '#744983', '#754984', '#764a84', '#784b84', '#794b84',
+          '#7a4c84', '#7b4d84', '#7d4d84', '#7e4e85', '#7f4f85', '#814f85',
+          '#825085', '#835085', '#845185', '#865285', '#875285', '#885385',
+          '#895485', '#8a5485', '#8c5585', '#8d5685', '#8e5785', '#8f5785',
+          '#905885', '#925985', '#935985', '#945a85', '#955b85', '#965c85',
+          '#975c85', '#985d85', '#9a5e85', '#9b5f85', '#9c5f85', '#9d6085',
+          '#9e6185', '#9f6284', '#a06284', '#a16384', '#a26484', '#a36584',
+          '#a46683', '#a56783', '#a66783', '#a76883', '#a86982', '#a96a82',
+          '#aa6b82', '#ab6c82', '#ac6c81', '#ad6d81', '#ae6e81', '#af6f80',
+          '#b07080', '#b1717f', '#b2727f', '#b3737f', '#b4747e', '#b4757e',
+          '#b5767d', '#b6777d', '#b7777c', '#b8787b', '#b9797b', '#b97a7a',
+          '#ba7b7a', '#bb7c79', '#bc7d78', '#bc7e78', '#bd7f77', '#be8176',
+          '#be8276', '#bf8377', '#bf8478', '#c08579', '#c0867a', '#c0877b',
+          '#c1887b', '#c1897c', '#c28a7d', '#c28b7e', '#c38c7f', '#c38d80',
+          '#c48e80', '#c48f81', '#c59082', '#c59183', '#c59284', '#c69385',
+          '#c69485', '#c79586', '#c79687', '#c89788', '#c89789', '#c9988a',
+          '#c9998b', '#ca9a8c', '#ca9c8c', '#cb9c8d', '#cb9d8e', '#cb9e8f',
+          '#cc9f90', '#cca091', '#cda192', '#cda293', '#cea394', '#cea495',
+          '#cfa595', '#cfa696', '#d0a797', '#d0a898', '#d0a999', '#d1aa9a',
+          '#d1ab9b', '#d2ac9c', '#d2ad9d', '#d3ae9e', '#d3af9f', '#d4b0a0',
+          '#d4b1a1', '#d5b2a2', '#d5b3a3', '#d6b4a4', '#d6b5a5', '#d6b6a6',
+          '#d7b7a7', '#d7b8a7', '#d8b9a8', '#d8baa9', '#d9bbaa', '#d9bcab',
+          '#dabdac', '#dabeae', '#dbbfae', '#dbc0b0', '#dcc1b1', '#dcc2b2',
+          '#ddc3b3', '#ddc4b4', '#dec5b5', '#dec6b6', '#dfc7b7', '#dfc8b8',
+          '#e0c9b9', '#e0caba', '#e1cbbb', '#e1ccbc', '#e2cdbd', '#e2cebe',
+          '#e3cfbf', '#e3d0c0', '#e3d0c2', '#e4d1c3', '#e4d2c4', '#e5d3c5',
+          '#e6d4c6', '#e6d5c7', '#e7d6c8', '#e7d7c9', '#e8d8cb', '#e8d9cc',
+          '#e9dacd', '#e9dbce', '#eadccf', '#eaddd0', '#ebded1', '#ebdfd3',
+          '#ece0d4', '#ece1d5', '#ede2d6', '#ede3d7', '#eee4d9', '#eee5da',
+          '#efe6db', '#f0e7dc', '#f0e8de', '#f1e9df', '#f1eae0', '#f2eae1',
+          '#f2ebe3', '#f3ece4', '#f3ede5', '#f4eee6', '#f5efe8', '#f5f0e9',
+          '#f6f1ea', '#f6f2ec', '#f7f3ed', '#f8f4ee', '#f8f5f0', '#f9f6f1',
+          '#f9f7f2', '#faf8f4', '#fbf9f5', '#fbf9f7', '#fcfaf8', '#fcfbf9',
+          '#fdfcfb', '#fefdfc', '#fefefe', '#ffffff']

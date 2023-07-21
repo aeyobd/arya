@@ -10,11 +10,11 @@ from .cmap import get_cmap
 # the smallest plot elements should be 0.3pt \approx 0.1mm
 # for a paper, we want fonts 10/12/14
 
-COLORS = ['#0173b2', '#de8f05', '#029e73', '#d55e00', '#cc78bc', 
-          '#ca9161', '#fbafe4', '#949494', '#ece133', '#56b4e9']
+COLORS = ["#0173b2", "#de8f05", "#029e73", "#d55e00", "#cc78bc", 
+          "#ca9161", "#fbafe4", "#949494", "#ece133", "#56b4e9"]
 
-MARKERS = ['o', '+', '^', '*', 
-           'o', 's', 'd', 'x', '1', 'v']
+MARKERS = ["o", "+", "^", "*", 
+           "o", "s", "d", "x", "1", "v"]
 FILL =    [True, True, True, True,
            False, False, False, True, True, True]
 
@@ -39,6 +39,10 @@ def init():
     if "arya" not in mpl.colormaps.keys():
         mpl.colormaps.register(get_cmap(), name="arya")
         mpl.colormaps.register(get_cmap(reverse=True), name="arya_r")
+
+        mpl.colormaps.register(get_cmap(to_white=True), name="arya_w")
+        mpl.colormaps.register(get_cmap(reverse=True, to_white=True), 
+                               name="arya_wr")
 
 
     set_fontsize(10)
