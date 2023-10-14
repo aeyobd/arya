@@ -68,7 +68,7 @@ def set_fontsize(medium, small=None, large=None):
 
     mpl.rcParams["font.size"] =  medium
     mpl.rcParams["figure.titlesize"] =  medium
-    mpl.rcParams["figure.labelsize"] =  medium
+    # mpl.rcParams["figure.labelsize"] =  medium
     mpl.rcParams["axes.titlesize"] = small
     mpl.rcParams["axes.labelsize"] = medium
     mpl.rcParams["xtick.labelsize"] = small

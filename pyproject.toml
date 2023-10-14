@@ -19,3 +19,8 @@ classifiers = [
 ]
 
 
+[tool.hatch.build]
+include = [
+    "arya/**/*.py",
+    "arya/**/*.mplstyle",
+]
