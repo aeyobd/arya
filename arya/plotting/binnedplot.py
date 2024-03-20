@@ -195,7 +195,7 @@ def plot_err(data, has_errors=False,
         sns.lineplot(data, x="x", y="y", color=color, **kwargs)
 
         if has_errors:
-            plt.fill_between(data.x, data.x_l, data.x_h,
+            plt.fill_between(data.x, data.y_l, data.y_h,
                     color=color, **err_kwargs)
 
 

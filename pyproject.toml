@@ -18,9 +18,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-
 [tool.hatch.build]
 include = [
     "arya/**/*.py",
     "arya/**/*.mplstyle",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["arya"]

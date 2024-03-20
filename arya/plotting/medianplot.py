@@ -9,6 +9,7 @@ import astropy.stats
 from ._plot_data import PlotData
 from ..figure.colorbar import Colorbar
 from .binnedplot import plot_err
+from .. import COLORS
 
 
 
@@ -17,6 +18,7 @@ def medianplot(data,
                x=None, y=None, 
                hue=None, style=None, size=None,
                binsize=20,
+               numbins=None,
                stat="median", errorbar="pi",
                # aesthetics
                hue_label=None,
@@ -51,7 +53,7 @@ def medianplot(data,
         hue_label=hue
 
     dat = MedianData(data, x=x, y=y, hue=hue, style=style, size=size,
-            binsize=binsize, stat=stat, errorbar=errorbar)
+            binsize=binsize, numbins=numbins, stat=stat, errorbar=errorbar)
 
     if hue is not None:
         hue = "hue"
@@ -62,6 +64,7 @@ def medianplot(data,
 
     has_cb, cb = create_cb(dat, hue, hue_label, legend)
 
+    kwargs["has_errors"] = dat.has_errors
     if has_cb:
         for group in dat.groups():
             color = cb(np.mean(group.hue)) # TODO
@@ -69,7 +72,7 @@ def medianplot(data,
     else:
         for group in dat.groups():
             if color is None:
-                color = next(plt.gca()._get_lines.prop_cycler)["color"]
+                color = COLORS[0]
             plot_err(group, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
 
 
@@ -120,48 +123,44 @@ class MedianData(PlotData):
         self._data = df
 
 
-    def bin(self, df, stat, binsize=10, errorbar=None):
+    def bin(self, df, stat, binsize=10, numbins=None, errorbar=None):
         df_sorted = df.sort_values(by="x")
 
         self.has_errors = errorbar is not None
 
-
         N = len(df_sorted) 
         offset = (N % binsize)//2
 
-        if self.has_errors:
-            data = pd.DataFrame(columns=["x", "y", "y_l", "y_h"])
-        else:
-            data = pd.DataFrame(columns=["x", "y"])
+        if numbins is None:
+            numbins = N // binsize + (N % binsize > 0)
+        binsize = N / numbins
+        offset = 0
 
-        i = 0
-        while i + 2*binsize < N:
-            if i == 0:
-                j = i + binsize + offset
-            elif i > N - 2*binsize + offset:
+        data = pd.DataFrame()
+        for n in range(numbins):
+            i = offset + round(binsize*n)
+            if n == numbins-1:
                 j = -1
             else:
-                j = i + binsize
+                j = offset + round(binsize * (n+1))
 
             group = df_sorted.iloc[i:j]
 
             x = _stat(group["x"], stat)
             y = _stat(group["y"], stat)
 
-            print(x)
-            print(y)
             if self.has_errors:
-                y_l, y_h = _stat_range(df.y, stat=stat, errorbar=errorbar)
-                data = pd.concat([data, pd.DataFrame(
-                    dict(x=[x], y=[y], y_l=[y_l], y_h=[y_h]))],
+                y_l, y_h = _stat_range(group.y, stat=stat, errorbar=errorbar)
+                data = pd.concat([data, pd.DataFrame( 
+                    dict(x=[x], y=[y], y_l=[y_l], y_h=[y_h], counts=[len(group)]))],
                                  ignore_index=True)
             else:
-                data = pd.concat([data, pd.DataFrame(dict(x=[x], y=[y]))],
+                data = pd.concat([data, pd.DataFrame(dict(x=[x],
+                    y=[y],counts=[len(group)]))],
                                  ignore_index=True)
 
             i += binsize
 
-        print(data)
         return data
 
 
@@ -174,7 +173,6 @@ class MedianData(PlotData):
             if len(g) > 0:
                 gs.append(g)
 
-        print(gs)
         return gs
 
 

@@ -2,10 +2,11 @@ from matplotlib import pyplot as plt
 import numpy as np
 from matplotlib.transforms import Bbox
 import matplotlib as mpl
+import itertools
 
 class Legend:
     def __init__(self, loc=None, ax=None, labels=None, 
-                 color_only=False, **kwargs):
+                 color_only=False, transpose=False, **kwargs):
 
         if ax is None:
             ax = plt.gca()
@@ -17,6 +18,7 @@ class Legend:
 
         
         self.kwargs = kwargs
+        self.transpose = transpose
         self.mpl_leg = plt.legend(**kwargs)
 
         self.locate(loc=loc)
@@ -100,7 +102,11 @@ class Legend:
 
 
     def create_legend(self):
-        self.mpl_leg = self.mpl_ax.legend(self.handles, self.labels, **self.kwargs)
+        if self.transpose:
+            ncols = self.kwargs["ncols"]
+            self.mpl_leg = self.mpl_ax.legend(transpose(self.handles,ncols), transpose(self.labels, ncols), **self.kwargs)
+        else:
+            self.mpl_leg = self.mpl_ax.legend(self.handles, self.labels, **self.kwargs)
 
 
     def locate(self, loc=None):
@@ -126,11 +132,15 @@ class Legend:
         elif loc == -2:
             self.kwargs["loc"] = "upper left"
             self.kwargs["bbox_to_anchor"] = (0, 0)
+        else:
+            self.kwargs["loc"] = loc
 
         self.create_legend()
 
 
 
+def transpose(items, ncol):
+    return itertools.chain(*[items[i::ncol] for i in range(ncol)])
 
 def find_best_position(legend, max_bad=5):
     badnesses = [0]*4
