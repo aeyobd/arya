@@ -48,6 +48,8 @@ def init():
     set_fontsize(10)
     set_linewidths(1, 2.5) # the em-dash is 10pt x 0.5pt for 10pt times
     set_tick_lengths(10/3, 10/6)
+    mpl.rcParams["patch.edgecolor"] = "none"
+    mpl.rcParams["hist.bins"] = 50
 
 
 def get_size():

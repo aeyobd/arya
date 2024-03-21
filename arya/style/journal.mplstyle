@@ -52,3 +52,6 @@ xtick.minor.visible:	True
 ytick.minor.visible:	True
 
 
+# 
+patch.edgecolor:	none
+hist.bins:         50
