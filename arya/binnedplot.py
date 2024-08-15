@@ -7,7 +7,7 @@ from scipy.stats import binned_statistic
 import astropy.stats
 
 from ._plot_data import PlotData
-from ..figure.colorbar import Colorbar
+from .colorbar import Colorbar
 
 
 class BinnedData(PlotData):

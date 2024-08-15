@@ -1,6 +1,10 @@
-from .style import style
-from .style.style import COLORS
-from .plotting import *
-from .figure import *
+from . import style
+from .style import COLORS
 
+from .legend import Legend
+from .colorbar import Colorbar, HueMap
+from .binnedplot import binnedplot
+from .medianplot import medianplot
+from ._plot_data import PlotData
+from .histogram import hist, hist2d
 

@@ -7,9 +7,9 @@ from scipy.stats import binned_statistic
 import astropy.stats
 
 from ._plot_data import PlotData
-from ..figure.colorbar import Colorbar
+from .colorbar import Colorbar
 from .binnedplot import plot_err
-from .. import COLORS
+from . import COLORS
 
 
 
@@ -76,8 +76,8 @@ def medianplot(data,
             plot_err(group, color=color, aes=aes, err_kwargs=err_kwargs, **kwargs)
 
 
-    if has_cb or not legend:
-        plt.gca().legend().remove()
+    # if has_cb or not legend:
+    #     plt.gca().legend().remove()
 
 
     return dat
