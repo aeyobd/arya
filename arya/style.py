@@ -22,9 +22,8 @@ FIG_SIZE = (10/3, 10/4)
 
 
 
-def init():
+def init(style):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    style = "journal"
 
     path = os.path.join(dir_path, style + ".mplstyle")
     mpl.style.use(path)
@@ -45,12 +44,19 @@ def init():
                                name="arya_wr")
 
 
-    set_fontsize(10)
-    set_linewidths(1, 2.5) # the em-dash is 10pt x 0.5pt for 10pt times
-    set_tick_lengths(10/3, 10/6)
+    set_widths(style)
     mpl.rcParams["patch.edgecolor"] = "none"
     mpl.rcParams["hist.bins"] = 50
 
+def set_widths(style):
+    if style == "mnras":
+        set_fontsize(10)
+        set_linewidths(1, 2.5) # the em-dash is 10pt x 0.5pt for 10pt times
+        set_tick_lengths(10/3, 10/6)
+    elif style == "apj":
+        set_fontsize(10)
+        set_linewidths(1, 2.5) # the em-dash is 10pt x 0.5pt for 10pt times
+        set_tick_lengths(10/3, 10/6)
 
 def get_size():
     global FIG_SIZE
@@ -79,7 +85,7 @@ def set_fontsize(medium, small=None, large=None):
 
 
 def set_linewidths(lw, ms):
-    mpl.rcParams["lines.linewidth"] = lw
+    mpl.rcParams["lines.linewidth"] = lw * 2
     mpl.rcParams["axes.linewidth"] = lw
     mpl.rcParams["lines.markersize"] = ms
     mpl.rcParams["errorbar.capsize"] = ms
@@ -145,7 +151,5 @@ def AutoLocatorInit(self):
             nbins = "auto",
             steps = [1,2,5,10])
 
-
-init()
 
 # locator for linear scales but with log variables (0.2, 0.3, 0.5, and 1 are preferred step sizes)

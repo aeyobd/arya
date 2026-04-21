@@ -1,5 +1,5 @@
 from . import style
-from .style import COLORS
+from .style import COLORS, init
 
 from .legend import Legend
 from .colorbar import Colorbar, HueMap
